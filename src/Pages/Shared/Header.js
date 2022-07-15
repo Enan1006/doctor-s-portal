@@ -5,7 +5,7 @@ import { Routes, Route, Link } from "react-router-dom";
 const Header = () => {
     const menuItems = <>
         <li><Link to='/'>Home</Link></li>
-        <li><Link to='/'>Appointment</Link></li>
+        <li><Link to='/appointment'>Appointment</Link></li>
         <li><Link to='/'>Review</Link></li>
         <li><Link to='/'>Contact</Link></li>
         <li><Link to='/about'>About</Link></li>
