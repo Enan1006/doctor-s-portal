@@ -1,47 +1,57 @@
 import React from 'react';
 import { useForm } from "react-hook-form";
-import { useSignInWithEmailAndPassword, useSignInWithGoogle } from 'react-firebase-hooks/auth'; import auth from '../../../firebase.init';
+import { useAuthState, useCreateUserWithEmailAndPassword, useSignInWithGoogle, useUpdateProfile } from 'react-firebase-hooks/auth';
+import auth from '../../../firebase.init';
 import { SpinnerDotted } from 'spinners-react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import Toast from '../Toast/Toast';
+import { async } from '@firebase/util';
 
-
-const Login = () => {
+const Signup = () => {
     const navigate = useNavigate();
-    let location = useLocation();
-
+    const [updateProfile, updatingProfiile, errorProfiile] = useUpdateProfile(auth);
+    const { register, formState: { errors }, handleSubmit } = useForm();
     const [
-        signInWithEmailAndPassword,
+        createUserWithEmailAndPassword,
         userEmail,
         loadingEmail,
-        errorEmail,
-    ] = useSignInWithEmailAndPassword(auth);
+        error,
+    ] = useCreateUserWithEmailAndPassword(auth);
     const [signInWithGoogle, userGoogle, loadingGoogle, errorGoogle] = useSignInWithGoogle(auth);
-    const { register, formState: { errors }, handleSubmit } = useForm();
-    if (loadingEmail || loadingGoogle) {
+    if (loadingEmail || loadingGoogle || updatingProfiile) {
         return <SpinnerDotted className='h-screen flex mx-auto' size={90} thickness={180} speed={136} color="rgba(57, 99, 172, 1)" />
 
     }
     let signInError;
-    let from = location.state?.from?.pathname || "/";
-    if (errorEmail || errorGoogle) {
-        signInError = <p className='text-red-500'><small>{errorEmail?.message || errorGoogle?.message}</small></p>
-    }
-    if (userEmail || userGoogle) {
-        navigate(from, { replace: true });
+    if (loadingEmail || errorGoogle || errorProfiile) {
+        signInError = <p className='text-red-500'><small>{loadingEmail?.message || errorGoogle?.message}</small></p>
     }
 
-    const onSubmit = (data) => {
+
+    const onSubmit = async (data) => {
 
         console.log(data);
-        signInWithEmailAndPassword(data.email, data.password);
+        await createUserWithEmailAndPassword(data.email, data.password);
+        await updateProfile({ displayName: data.name });
+        navigate('/');
     };
+
     return (
         <div className='grid grid-cols-1'>
-            <div className="card bg-base-100 shadow-xl mx-auto px-10 md:px-48 my-10">
+            <div className="card bg-base-100 shadow-xl mx-auto px-10 md:px-48 my-10 py-10">
                 <div className="card-body">
-                    <h2 className="text-2xl font-semibold text-center text-indigo-600">Login</h2>
+                    <h2 className="text-2xl font-semibold text-center text-indigo-600">Sign Up</h2>
                     <form onSubmit={handleSubmit(onSubmit)}>
 
+                        <input {...register("name", {
+                            required: {
+                                value: true,
+                                message: "Name is required"
+                            },
+                        })} className="input mt-2 w-full md:w-96 max-w-xs border border-slate-500 focus:outline focus:outline-2 focus:outline-indigo-600 focus:border-0" placeholder='Your Name' />
+                        <label className="label">
+                            {errors.name?.type === 'required' && <span className='label-text-alt text-red-500'>{errors.name.message}</span>}
+                        </label>
                         <input {...register("email", {
                             required: {
                                 value: true,
@@ -52,7 +62,7 @@ const Login = () => {
                                 value: /[a-z0-9]+@[a-z]+\.[a-z]{2,3}/,
                                 message: "Provide a valid email"
                             }
-                        })} className="input mt-2 w-full md:w-96 max-w-xs border border-slate-500 focus:outline focus:outline-2 focus:outline-indigo-600 focus:border-0" placeholder='Your email' />
+                        })} className="input mt-2 w-full md:w-96 max-w-xs border border-slate-500 focus:outline focus:outline-2 focus:outline-indigo-600 focus:border-0" placeholder='Your Email' />
                         <label className="label">
                             {errors.email?.type === 'required' && <span className='label-text-alt text-red-500'>{errors.email.message}</span>}
                             {errors.email?.type === 'pattern' && <span className='label-text-alt text-red-500'>{errors.email.message}</span>}
@@ -72,7 +82,7 @@ const Login = () => {
                                 value: /^([a-zA-Z0-9@*#]{8,15})$/,
                                 message: "Password must contain atleast a uppercase, a lowercase, a special character and a digit"
                             }
-                        })} className="input mt-2 w-full md:w-96 max-w-xs border border-slate-500 focus:outline focus:outline-2 focus:outline-indigo-600 focus:border-0" placeholder='Your Password' />
+                        })} className="input w-full md:w-96 max-w-xs border border-slate-500 focus:outline focus:outline-2 focus:outline-indigo-600 focus:border-0" placeholder='Your Password' />
                         <label className="label">
                             {errors.password?.type === 'required' && <span className='label-text-alt text-red-500'>{errors.password.message}</span>}
                             {errors.password?.type === 'minLength' && <span className='label-text-alt text-red-500'>{errors.password.message}</span>}
@@ -80,10 +90,10 @@ const Login = () => {
                         </label>
                         <br />
 
-                        <input type="submit" value="Login" className="btn bg-indigo-600 text-white border-0 w-full mt-2 max-w-xs  hover:border hover:border-indigo-500 hover:text-indigo-500 hover:bg-white" />
+                        <input type="submit" value="Sign Up" className="btn bg-indigo-600 text-white border-0 w-full mt-2 max-w-xs  hover:border hover:border-indigo-500 hover:text-indigo-500 hover:bg-white" />
                         {signInError}
                     </form>
-                    <Link to='/signup'>Don't you have account? <span className='text-indigo-500'>Please Signup</span></Link>
+                    <Link to='/login'>You have account already? <span className='text-indigo-500'>Please Login</span></Link>
                     <div className="divider">OR</div>
                     <div className="card-actions justify-center">
                         <button onClick={() => signInWithGoogle()} className="btn bg-blue-500 text-white border-0 hover:border hover:border-indigo-500 hover:text-indigo-500 hover:bg-white">Sign in with Google</button>
@@ -94,4 +104,4 @@ const Login = () => {
     );
 };
 
-export default Login;
+export default Signup;
